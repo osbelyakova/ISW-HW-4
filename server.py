@@ -4,7 +4,12 @@ import threading
 import multiprocessing
 import os
 import csv
-#from pycorenlp import StanfordCoreNLPnlp = StanfordCoreNLP('http://localhost:9000')
+import numpy as np
+import pandas as pd
+import pickle
+import sys
+from pycorenlp import StanfordCoreNLP
+nlp = StanfordCoreNLP('http://localhost:9000')
 
 def process_request(conn, addr):
 	print("connected client:", addr)
@@ -13,105 +18,93 @@ def process_request(conn, addr):
 			data = conn.recv(1024)
 			if not data:
 				break
+			conn.send("OK".encode("utf-8"))
 			first_message = data.decode("utf-8")
-			size = first_message[7:-1]
+			size = int(first_message[7:-1])
+			data2 = conn.recv(size)
+			df = pickle.loads(data2)
 			if (first_message[1:5] == "STAT"):
-				do_STAT(int(size), conn, addr)
+				do_STAT(df, conn, addr)
 			if (first_message[1:5] == "ENTI"):
-				do_ENTI(int(size), conn, addr)
+				do_ENTI(df, conn, addr)
 		conn.close()
 
-def do_STAT(csv_size, conn, addr):
-	print("make STAT for:", addr)
-	with conn:
-		while True:
-			data = conn.recv(csv_size)
-			if not data:
-				break
-			FILE_NAME = make_csv(data)
-			s = ten_popular_words(FILE_NAME)
-			#отправку клиенту реализовать
-
-def ten_popular_words(file_name):
-	with open(file_name, newline="", encoding="ISO-8859-1") as csv_file:
-		reader = csv.reader(csv_file)
-		s = ""
-		flag = 1
-		for row in reader:
-			if flag:
-				flag = 0
-				continue
-			if row[6] != "":
-				s = s + str(row[6])+ ' '
-		csv_file.close()
-	l = []
-	s.lstrip()
-	substr = ""
-	for a in s:
-		if a == ' ':
-			substr.lstrip()
-			l.append(substr)
-			s.lstrip()
-			substr = ""
-		else:
-			substr = substr + a
-	l.sort()
-	l_10 = []
-	k_10 = []
-	l.remove('')
-	while l != []:
-		word = l[0]
-		k = l.count(word)
-		if len(l_10) < 10:
-			l_10.append(word)
-			k_10.append(k)
-		else:
-			if min(k_10) < k:
-				for i in k_10:
-					if k_10[i] == min(k_10):
-						l_10[i] = word
-						k_10[i] = k
-						break
-		for i in range(0, k):
-			l.remove(word)
-	return l_10
-			
-					
-			
-def make_csv(data):
-	s = data.decode("utf-8")
-	l = []
-	i = s.find(']')
-	while i > 0:
-		substr = s[2:i - 1]
-		m = []
-		j = substr.find(';') + 1
-		while j > 0:
-			m.append(substr[:j - 1])
-			substr = substr[j:]
-			j = substr.find(';') + 1
-		m.append(substr)
-		l.append(m)
-		s = s[i + 1:]
-		i = s.find(']')
-	with open("server_csv.csv", "w", newline="") as f:
-		writer = csv.writer(f)
-		writer.writerows(l)
-		f.close()
-	return "server_csv.csv"
-
-def do_ENTI(csv_size, conn, addr):
-	print("make ENTI for:", addr)
-	with conn:
-		while True:
-			data = conn.recv(csv_size)
-			if not data:
-				break
-			take_entities(data)
-			#отправку клиенту реализовать
-			
-def take_entities(data):
+def do_STAT(df, conn, addr):
+	s1 = ten_popular_words(df)
+	s2 = ten_popular_tweets(df)
+	s3 = ten_popular_authors(df)
+	s4 = countries_Tweets(df)
+	data = pd.concat([s1,s2,s3,s4], axis=1)
+	current_df = pickle.dumps(data)
+	byte_size = str(sys.getsizeof(current_df))
+	conn.send(byte_size.encode("utf-8"))
+	answer = conn.recv(50)
+	conn.send(current_df)
 	return 0
+	
+def ten_popular_words(data):
+	data = data.loc[:,['Tweet content']]
+	l = []
+	col = []
+	d = {}
+	for i in data.index:
+		text = data.iloc[i]['Tweet content']
+		for word in text.split():
+			if (word != "RT"):
+				d[word] = d.get(word,0) + 1
+	for i in range(0,10):
+		pop_word = max(d, key=d.get)
+		del d[pop_word]
+		l.append(pop_word)
+		col.append(l)
+		l = []			
+	data = pd.DataFrame(col,columns=['Popular words'])
+	return data
+			
+def ten_popular_authors(data):
+	data = data.loc[:,['Nickname','Followers']]
+	data = data.sort_values("Followers", axis=0, ascending=False)
+	data = data[:10].reset_index(drop=True)
+	data.columns = ['Popular users','Followers']
+	return data
+	
+def ten_popular_tweets(data):
+	data = data.loc[:,['RTs','Nickname','Tweet content']]
+	data = data.sort_values("RTs", axis=0, ascending=False)
+	data = data.loc[:10,['RTs','Nickname','Tweet content']].reset_index(drop=True)
+	data.columns = ['RTs','Nickname','Popular tweets']
+	return data
+
+def countries_Tweets(data):
+	l1 = []
+	l2 = []
+	for i in data.index:
+		if (data.iloc[i]['Tweet content'].find("RT") == -1):
+			l1.append(i)
+		else:
+			l2.append(i)
+	data1 = data.loc[l1,['Country']]
+	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
+	data2 = data.loc[l2,['Country']]
+	data2 = data2.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
+	data = pd.concat([data1,data2], axis=1)
+	data.columns = ['Country with Tweets','Country with RTs']
+	return data
+
+def do_ENTI(data, conn, addr):
+	print("make ENTI for:", addr)
+	data = data.loc[:,['Tweet content']]
+	l = []
+	for i in data.index:
+		text = data.iloc[i]['Tweet content']
+		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'csv','timeout': 1000,})
+		pos = []
+		for word in result["sentences"][1]['tokens']:
+			pos.append('{} ({})'.format(word['word'], word['ner']))
+		" ".join(pos)	
+		l.append(pos)
+		print(l)
+	#отправку клиенту реализовать
 
 def worker(sock):
 	while True:
@@ -121,7 +114,7 @@ def worker(sock):
 		th.start()
 
 with socket.socket() as sock:
-	sock.bind(("", 3020))
+	sock.bind(("", 3000))
 	sock.listen()
 	workers_count = 3
 	workers_list = [multiprocessing.Process(target=worker, args=(sock,))

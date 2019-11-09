@@ -2,36 +2,23 @@
 import socket
 import csv
 import sys
+import numpy as np
+import pandas as pd
+import pickle
 		
-def make_csv(data):
-	s = data.decode("utf-8")
-	l = []
-	while s.find(']') > 0:
-		i = s.find(']')
-		substr = s[2:i - 1]
-		m = []
-		while substr.find(';') > 0:
-			j = substr.find(';') + 1
-			m.append(substr[:j - 1])
-			substr = substr[j:]
-		m.append(substr)
-		l.append(m)
-		s = s[i + 1:]
-		
-message = input()
-with socket.create_connection(("127.0.0.1", 3020)) as sock:
-	NUMBER_OF_LINES = int(message[7:-1])
-	s = ""
-	with open('dataSet.csv', newline="", encoding="ISO-8859-1") as csv_file:
-		reader = csv.reader(csv_file)
-		for i in range(0,NUMBER_OF_LINES+1):
-			l = str(next(reader))
-			s = s + l
-		LENGHT_IN_BYTES = sys.getsizeof(s)
-		message = message[:7] + str(LENGHT_IN_BYTES) +']'
-		sock.sendall(message.encode("utf-8"))
-		sock.sendall(s.encode("utf-8"))
-		#while True:
-			#answer = sock.recv(1024)
-			#if not answer:
-				#break
+message = "[ENTI][15]"
+size = int(message[7:-1])
+df = pd.read_csv('dataSet.csv', delimiter=';', encoding='iso-8859-1')
+current_df = pickle.dumps(df[:size+1])
+byte_size = str(sys.getsizeof(current_df))
+message = message[:7] + byte_size + ']'
+with socket.create_connection(("127.0.0.1", 3000)) as sock:
+	sock.send(message.encode("utf-8"))
+	answer = sock.recv(50)		
+	sock.sendall(current_df)
+	answer = sock.recv(50)
+	size = int(answer.decode('utf-8'))
+	sock.send("OK".encode("utf-8"))
+	df = sock.recv(size)
+	data = pickle.loads(df)
+	data.to_csv('new_csv.csv', encoding='iso-8859-1')
