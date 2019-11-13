@@ -97,13 +97,15 @@ def do_ENTI(data, conn, addr):
 	l = []
 	for i in data.index:
 		text = data.iloc[i]['Tweet content']
-		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'csv','timeout': 1000,})
+		print("TEXT ", text)
+		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'json','timeout': 100000,})
+		print("RESULT ",sresult)
 		pos = []
-		for word in result["sentences"][1]['tokens']:
+		for word in result["sentences"][0]['tokens']:
 			pos.append('{} ({})'.format(word['word'], word['ner']))
 		" ".join(pos)	
 		l.append(pos)
-		print(l)
+	print(l)
 	#отправку клиенту реализовать
 
 def worker(sock):

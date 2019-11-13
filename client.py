@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pickle
 		
-message = "[ENTI][15]"
+message = "[ENTI][3]"
 size = int(message[7:-1])
 df = pd.read_csv('dataSet.csv', delimiter=';', encoding='iso-8859-1')
 current_df = pickle.dumps(df[:size+1])
@@ -21,4 +21,4 @@ with socket.create_connection(("127.0.0.1", 3000)) as sock:
 	sock.send("OK".encode("utf-8"))
 	df = sock.recv(size)
 	data = pickle.loads(df)
-	data.to_csv('new_csv.csv', encoding='iso-8859-1')
+	data.to_csv('new_tcp_answer.csv', encoding='iso-8859-1')
