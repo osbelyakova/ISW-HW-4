@@ -99,13 +99,19 @@ def do_ENTI(data, conn, addr):
 		text = data.iloc[i]['Tweet content']
 		print("TEXT ", text)
 		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'json','timeout': 100000,})
-		print("RESULT ",sresult)
 		pos = []
-		for word in result["sentences"][0]['tokens']:
-			pos.append('{} ({})'.format(word['word'], word['ner']))
+		for word in result["sentences"][0]["tokens"]:
+			pos.append('{} ({})'.format(word["word"], word["ner"]))
 		" ".join(pos)	
 		l.append(pos)
+		print("OPS ")
 	print(l)
+	
+	current_df = pickle.dumps(data)
+	byte_size = str(sys.getsizeof(current_df))
+	conn.send(byte_size.encode("utf-8"))
+	answer = conn.recv(50)
+	conn.send(current_df)
 	#отправку клиенту реализовать
 
 def worker(sock):
