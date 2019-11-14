@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pickle
 import sys
-from pycorenlp import StanfordCoreNLP
-nlp = StanfordCoreNLP('http://localhost:9000')
+"""from pycorenlp import StanfordCoreNLP
+nlp = StanfordCoreNLP('http://localhost:9000')"""
 
 def process_request(conn, addr):
 	print("connected client:", addr)
@@ -71,7 +71,8 @@ def ten_popular_authors(data):
 def ten_popular_tweets(data):
 	data = data.loc[:,['RTs','Nickname','Tweet content']]
 	data = data.sort_values("RTs", axis=0, ascending=False)
-	data = data.loc[:10,['RTs','Nickname','Tweet content']].reset_index(drop=True)
+	data = data[:10].reset_index(drop=True)
+	print('RTs',data)
 	data.columns = ['RTs','Nickname','Popular tweets']
 	return data
 
