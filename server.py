@@ -114,6 +114,7 @@ def do_ENTI(data, conn, addr):
 	conn.send(byte_size.encode("utf-8"))
 	answer = conn.recv(50)
 	conn.send(current_df)
+	return 0
 
 def worker(sock):
 	while True:
