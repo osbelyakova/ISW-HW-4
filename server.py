@@ -78,7 +78,6 @@ def ten_popular_tweets(data):
 	data['RTs'].replace('',np.nan, inplace=True)
 	data.dropna(subset=['RTs'], inplace=True)
 	data.columns = ['RTs','Nickname','Popular tweets']
-	print(data)
 	return data
 
 def countries_Tweets(data):
