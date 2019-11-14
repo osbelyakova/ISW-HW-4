@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pickle
 import sys
-"""from pycorenlp import StanfordCoreNLP
-nlp = StanfordCoreNLP('http://localhost:9000')"""
+from pycorenlp import StanfordCoreNLP
+nlp = StanfordCoreNLP('http://localhost:9000')
 
 def process_request(conn, addr):
 	print("connected client:", addr)
@@ -57,7 +57,7 @@ def ten_popular_words(data):
 		del d[pop_word]
 		l.append(pop_word)
 		col.append(l)
-		l = []			
+		l = []
 	data = pd.DataFrame(col,columns=['Popular words'])
 	return data
 			
@@ -65,15 +65,20 @@ def ten_popular_authors(data):
 	data = data.loc[:,['Nickname','Followers']]
 	data = data.sort_values("Followers", axis=0, ascending=False)
 	data = data[:10].reset_index(drop=True)
+	data['Followers'].replace('',np.nan, inplace=True)
+	data.dropna(subset=['Followers'], inplace=True)
 	data.columns = ['Popular users','Followers']
 	return data
 	
 def ten_popular_tweets(data):
 	data = data.loc[:,['RTs','Nickname','Tweet content']]
 	data = data.sort_values("RTs", axis=0, ascending=False)
+	data = data.drop_duplicates(subset=['Tweet content'], keep="last")
 	data = data[:10].reset_index(drop=True)
-	print('RTs',data)
+	data['RTs'].replace('',np.nan, inplace=True)
+	data.dropna(subset=['RTs'], inplace=True)
 	data.columns = ['RTs','Nickname','Popular tweets']
+	print(data)
 	return data
 
 def countries_Tweets(data):
@@ -93,27 +98,22 @@ def countries_Tweets(data):
 	return data
 
 def do_ENTI(data, conn, addr):
-	print("make ENTI for:", addr)
 	data = data.loc[:,['Tweet content']]
 	l = []
 	for i in data.index:
 		text = data.iloc[i]['Tweet content']
-		print("TEXT ", text)
 		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'json','timeout': 100000,})
 		pos = []
 		for word in result["sentences"][0]["tokens"]:
 			pos.append('{} ({})'.format(word["word"], word["ner"]))
 		" ".join(pos)	
 		l.append(pos)
-		print("OPS ")
-	print(l)
-	
+	data = pd.DataFrame(l)
 	current_df = pickle.dumps(data)
 	byte_size = str(sys.getsizeof(current_df))
 	conn.send(byte_size.encode("utf-8"))
 	answer = conn.recv(50)
 	conn.send(current_df)
-	#отправку клиенту реализовать
 
 def worker(sock):
 	while True:

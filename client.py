@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pickle
 		
-message = "[STAT][15]"
+message = input("Enter your request: ")
 size = int(message[7:-1])
 df = pd.read_csv('dataSet.csv', delimiter=';', encoding='iso-8859-1')
 current_df = pickle.dumps(df[:size+1])
