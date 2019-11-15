@@ -11,7 +11,9 @@ import sys
 from pycorenlp import StanfordCoreNLP
 nlp = StanfordCoreNLP('http://localhost:9000')
 
+"""Server"""
 def process_request(conn, addr):
+	"""Choose the command to execute"""
 	print("connected client:", addr)
 	with conn:
 		while True:
@@ -30,10 +32,14 @@ def process_request(conn, addr):
 		conn.close()
 
 def do_STAT(df, conn, addr):
+	"""if STAT"""
 	s1 = ten_popular_words(df)
 	s2 = ten_popular_tweets(df)
 	s3 = ten_popular_authors(df)
 	s4 = countries_Tweets(df)
+	s1['   '] = ""
+	s2['   '] = ""
+	s3['   '] = ""
 	data = pd.concat([s1,s2,s3,s4], axis=1)
 	current_df = pickle.dumps(data)
 	byte_size = str(sys.getsizeof(current_df))
@@ -43,6 +49,7 @@ def do_STAT(df, conn, addr):
 	return 0
 	
 def ten_popular_words(data):
+	"""Looking for 10 popular words in data"""
 	data = data.loc[:,['Tweet content']]
 	l = []
 	col = []
@@ -62,6 +69,7 @@ def ten_popular_words(data):
 	return data
 			
 def ten_popular_authors(data):
+	"""Looking for 10 popular authors in data"""
 	data = data.loc[:,['Nickname','Followers']]
 	data = data.sort_values("Followers", axis=0, ascending=False)
 	data = data[:10].reset_index(drop=True)
@@ -71,6 +79,7 @@ def ten_popular_authors(data):
 	return data
 	
 def ten_popular_tweets(data):
+	"""Looking for 10 popular tweets in data"""
 	data = data.loc[:,['RTs','Nickname','Tweet content']]
 	data = data.sort_values("RTs", axis=0, ascending=False)
 	data = data.drop_duplicates(subset=['Tweet content'], keep="last")
@@ -81,6 +90,7 @@ def ten_popular_tweets(data):
 	return data
 
 def countries_Tweets(data):
+	"""Looking for countries with Tweets and RTweets"""
 	l1 = []
 	l2 = []
 	for i in data.index:
@@ -97,6 +107,7 @@ def countries_Tweets(data):
 	return data
 
 def do_ENTI(data, conn, addr):
+	"""if ENTI"""
 	data = data.loc[:,['Tweet content']]
 	l = []
 	for i in data.index:
@@ -116,6 +127,7 @@ def do_ENTI(data, conn, addr):
 	return 0
 
 def worker(sock):
+	"""Processes"""
 	while True:
 		conn, addr = sock.accept()
 		print("pid", os.getpid())

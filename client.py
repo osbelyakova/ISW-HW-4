@@ -21,4 +21,7 @@ with socket.create_connection(("127.0.0.1", 3000)) as sock:
 	sock.send("OK".encode("utf-8"))
 	df = sock.recv(size)
 	data = pickle.loads(df)
-	data.to_csv('new_tcp_answer.csv', encoding='iso-8859-1')
+	if (message[1:5] == "STAT"):
+		data.to_csv('data_tcp_answer.csv', encoding='iso-8859-1')
+	if (message[1:5] == "ENTI"):
+		data.to_csv('entities_tcp_answer.csv', encoding='iso-8859-1')
