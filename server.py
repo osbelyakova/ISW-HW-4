@@ -11,7 +11,7 @@ import sys
 from pycorenlp import StanfordCoreNLP
 nlp = StanfordCoreNLP('http://localhost:9000')
 
-"""Server TCP"""
+"""Server"""
 def process_request(conn, addr):
 	"""Choose the command to execute"""
 	print("connected client:", addr)
@@ -99,10 +99,10 @@ def countries_Tweets(data):
 		else:
 			l2.append(i)
 	data1 = data.loc[l1,['Country']]
-	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data.loc[l2,['Country']]
 	data1 = data1.drop_duplicates(subset=['Country'], keep="last")
 	data2 = data2.drop_duplicates(subset=['Country'], keep="last")
+	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data2.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data = pd.concat([data1,data2], axis=1)
 	data.columns = ['Country with Tweets','Country with RTs']
