@@ -4,13 +4,12 @@ import csv
 import numpy as np
 import pandas as pd
 import pickle
-SIZE_CSV = 15
+SIZE_CSV = 130
 
+"""Client HTTP"""
 df = pd.read_csv('dataSet.csv', delimiter=';', encoding='iso-8859-1')
 current_df = df[:SIZE_CSV]
-with open('new.pickle', 'wb') as f:
-	pickle.dump(current_df, f)
-files = {'file': ('new.pickle', open('new.pickle', 'rb'))}
+files = {'file': (pickle.dumps(current_df))}
 r = requests.post("http://localhost:8000", files=files)
 our_content = r.content
 df = pickle.loads(our_content)

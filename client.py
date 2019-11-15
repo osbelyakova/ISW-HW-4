@@ -5,7 +5,8 @@ import sys
 import numpy as np
 import pandas as pd
 import pickle
-		
+	
+"""Client TCP"""	
 message = input("Enter your request: ")
 size = int(message[7:-1])
 df = pd.read_csv('dataSet.csv', delimiter=';', encoding='iso-8859-1')

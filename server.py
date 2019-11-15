@@ -11,7 +11,7 @@ import sys
 from pycorenlp import StanfordCoreNLP
 nlp = StanfordCoreNLP('http://localhost:9000')
 
-"""Server"""
+"""Server TCP"""
 def process_request(conn, addr):
 	"""Choose the command to execute"""
 	print("connected client:", addr)
@@ -37,9 +37,9 @@ def do_STAT(df, conn, addr):
 	s2 = ten_popular_tweets(df)
 	s3 = ten_popular_authors(df)
 	s4 = countries_Tweets(df)
-	s1['   '] = ""
-	s2['   '] = ""
-	s3['   '] = ""
+	s1[' '] = ""
+	s2[' '] = ""
+	s3[' '] = ""
 	data = pd.concat([s1,s2,s3,s4], axis=1)
 	current_df = pickle.dumps(data)
 	byte_size = str(sys.getsizeof(current_df))
@@ -101,6 +101,8 @@ def countries_Tweets(data):
 	data1 = data.loc[l1,['Country']]
 	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data.loc[l2,['Country']]
+	data1 = data1.drop_duplicates(subset=['Country'], keep="last")
+	data2 = data2.drop_duplicates(subset=['Country'], keep="last")
 	data2 = data2.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data = pd.concat([data1,data2], axis=1)
 	data.columns = ['Country with Tweets','Country with RTs']

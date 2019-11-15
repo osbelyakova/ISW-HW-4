@@ -6,6 +6,7 @@ import pandas as pd
 import pickle
 import requests
 
+"""Server HTTP"""
 class RequestHandler(BaseHTTPRequestHandler):
 	def _set_headers(self):
 		self.send_response(200)
@@ -14,13 +15,16 @@ class RequestHandler(BaseHTTPRequestHandler):
 	
 	def do_POST(self):
 		content_length = int(self.headers['Content-Length'])
-		a = self.rfile.read(106)
-		our_content = self.rfile.read(content_length - 106)
+		a = self.rfile.read(100)
+		our_content = self.rfile.read(content_length - 100)
 		df = pickle.loads(our_content)
 		s1 = ten_popular_words(df)
 		s2 = ten_popular_tweets(df)
 		s3 = ten_popular_authors(df)
 		s4 = countries_Tweets(df)
+		s1[' '] = ""
+		s2[' '] = ""
+		s3[' '] = ""
 		data = pd.concat([s1,s2,s3,s4], axis=1)
 		current_df = pickle.dumps(data)
 		self._set_headers()
@@ -48,6 +52,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 		
 		
 def ten_popular_words(data):
+	"""Looking for 10 popular words in data"""
 	data = data.loc[:,['Tweet content']]
 	l = []
 	col = []
@@ -67,6 +72,7 @@ def ten_popular_words(data):
 	return data
 			
 def ten_popular_authors(data):
+	"""Looking for 10 popular authors in data"""
 	data = data.loc[:,['Nickname','Followers']]
 	data = data.sort_values("Followers", axis=0, ascending=False)
 	data = data[:10].reset_index(drop=True)
@@ -76,6 +82,7 @@ def ten_popular_authors(data):
 	return data
 	
 def ten_popular_tweets(data):
+	"""Looking for 10 popular tweets in data"""
 	data = data.loc[:,['RTs','Nickname','Tweet content']]
 	data = data.sort_values("RTs", axis=0, ascending=False)
 	data = data.drop_duplicates(subset=['Tweet content'], keep="last")
@@ -86,6 +93,7 @@ def ten_popular_tweets(data):
 	return data
 
 def countries_Tweets(data):
+	"""Looking for countries with Tweets and RTweets"""
 	l1 = []
 	l2 = []
 	for i in data.index:
@@ -96,6 +104,8 @@ def countries_Tweets(data):
 	data1 = data.loc[l1,['Country']]
 	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data.loc[l2,['Country']]
+	data1 = data1.drop_duplicates(subset=['Country'], keep="last")
+	data2 = data2.drop_duplicates(subset=['Country'], keep="last")
 	data2 = data2.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data = pd.concat([data1,data2], axis=1)
 	data.columns = ['Country with Tweets','Country with RTs']
