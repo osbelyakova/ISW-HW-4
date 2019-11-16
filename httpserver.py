@@ -5,9 +5,12 @@ import numpy as np
 import pandas as pd
 import pickle
 import requests
+import multiprocessing
+from pycorenlp import StanfordCoreNLP
+nlp = StanfordCoreNLP('http://localhost:9000')
 
 """Server HTTP"""
-class RequestHandler(BaseHTTPRequestHandler):
+class RequestHandler1(BaseHTTPRequestHandler):
 	def _set_headers(self):
 		self.send_response(200)
 		self.send_header("Content-type", "multipart/form-data")
@@ -29,11 +32,17 @@ class RequestHandler(BaseHTTPRequestHandler):
 		current_df = pickle.dumps(data)
 		self._set_headers()
 		self.wfile.write(current_df)
-		
-	def do_ENTI(self):
+
+class RequestHandler2(BaseHTTPRequestHandler):
+	def _set_headers(self):
+		self.send_response(200)
+		self.send_header("Content-type", "multipart/form-data")
+		self.end_headers()
+			
+	def do_POST(self):
 		content_length = int(self.headers['Content-Length'])
-		a = self.rfile.read(106)
-		our_content = self.rfile.read(content_length - 106)
+		a = self.rfile.read(100)
+		our_content = self.rfile.read(content_length - 100)
 		data = pickle.loads(our_content)
 		data = data.loc[:,['Tweet content']]
 		l = []
@@ -104,20 +113,31 @@ def countries_Tweets(data):
 		else:
 			l2.append(i)
 	data1 = data.loc[l1,['Country']]
-	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data.loc[l2,['Country']]
 	data1 = data1.drop_duplicates(subset=['Country'], keep="last")
 	data2 = data2.drop_duplicates(subset=['Country'], keep="last")
+	data1 = data1.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data2 = data2.sort_values("Country", axis=0, ascending=False).reset_index(drop=True)
 	data = pd.concat([data1,data2], axis=1)
 	data.columns = ['Country with Tweets','Country with RTs']
 	return data
 
 
-def run(server_class=HTTPServer, handler_class=RequestHandler, addr="localhost", port=8000):
+def run_stat(server_class=HTTPServer, handler_class=RequestHandler1, addr="localhost", port=8000):
 	server_address = (addr, port)
 	httpd = server_class(server_address, handler_class)
-	print(f"Starting httpd server on {addr}:{port}")
+	print(f"Starting stat httpd server on {addr}:{port}")
 	httpd.serve_forever()
 	
-run()
+def run_enti(server_class=HTTPServer, handler_class=RequestHandler2, addr="localhost", port=8001):
+	server_address = (addr, port)
+	httpd = server_class(server_address, handler_class)
+	print(f"Starting enti httpd server on {addr}:{port}")
+	httpd.serve_forever()
+
+stat = multiprocessing.Process(target=run_stat, args=())
+enti = multiprocessing.Process(target=run_enti, args=())
+stat.start()
+enti.start()
+stat.join()
+enti.join()
