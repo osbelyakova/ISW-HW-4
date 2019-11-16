@@ -38,9 +38,9 @@ def do_STAT(df, conn, addr):
 	s3 = ten_popular_authors(df)
 	s4 = countries_Tweets(df)
 	s1[' '] = ""
-	s2[' '] = ""
+	s4[' '] = ""
 	s3[' '] = ""
-	data = pd.concat([s1,s2,s3,s4], axis=1)
+	data = pd.concat([s1,s4,s3,s2], axis=1)
 	current_df = pickle.dumps(data)
 	byte_size = str(sys.getsizeof(current_df))
 	conn.send(byte_size.encode("utf-8"))
@@ -112,14 +112,16 @@ def do_ENTI(data, conn, addr):
 	"""if ENTI"""
 	data = data.loc[:,['Tweet content']]
 	l = []
+	m = []
 	for i in data.index:
 		text = data.iloc[i]['Tweet content']
 		result = nlp.annotate(text, properties={'annotators': 'ner','outputFormat': 'json','timeout': 100000,})
 		pos = []
 		for word in result["sentences"][0]["tokens"]:
 			pos.append('{} ({})'.format(word["word"], word["ner"]))
-		" ".join(pos)	
-		l.append(pos)
+		m.append(" ".join(pos))
+		l.append(m)
+		m = []
 	data = pd.DataFrame(l)
 	current_df = pickle.dumps(data)
 	byte_size = str(sys.getsizeof(current_df))
